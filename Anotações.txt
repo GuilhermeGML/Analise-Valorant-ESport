@@ -1,0 +1,31 @@
+- Gráficos Iniciais
+Jogos por Mapa
+Agentes Mais Escolhidos
+Jogadores por Estatistica
+Rounds Totais por Time
+Agente Mais Jogado por Jogador
+Agente Com melhor estatica de cada Jogador
+Estatistica Média por Agente
+Melhor Jogador por Mapa
+Média de Kills por Mapa 
+Impacto por Função
+
+-DashBoard
+Ranking de StatsSeleciona qualquer stat (K, R, ACS...) e vê o ranking de jogadores com filtros de time, mapa e mínimo de partidas
+
+Análise por Mapa Seleciona um mapa → médias de stats, melhores jogadores, agentes mais usados
+
+Perfil do JogadorSeleciona jogador + mapa → radar de performance, rating por mapa, agentes usados, tabela detalhada
+
+Análise por AgenteStats médios por agente coloridos por função, impacto por função
+
+ResultadosVitórias por time, rounds totais, frequência de mapas
+
+Visão GeralScatter Rating vs ACS, distribuição de HS% por função, kills por mapa
+
+
+-Aplicação de Machine Learning
+Prever quem qual time ganha o mapa 
+Ex: Sen X EG na Haven quem ganha?
+Prever quem ganha a séria MD3 ou MD5
+Ex: Kru x Fur em uma MD3 com os Mapas IceBox, Lotus, Abiss qual o placar final 2x0, 2x1 pra quem?
