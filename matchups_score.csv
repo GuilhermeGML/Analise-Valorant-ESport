@@ -1,0 +1,131 @@
+Time,Adversario,Vitorias,Derrotas,Mapas,WinRate
+100 Thieves,2Game Esports,2,0,2,100.0
+100 Thieves,Cloud9,2,3,5,40.0
+100 Thieves,Evil Geniuses,6,0,6,100.0
+100 Thieves,G2 Esports,2,6,8,25.0
+100 Thieves,LEVIATÁN,3,3,6,50.0
+100 Thieves,LOUD,6,3,9,66.7
+100 Thieves,MIBR,2,4,6,33.3
+100 Thieves,NRG,5,6,11,45.5
+100 Thieves,Sentinels,4,4,8,50.0
+100 Thieves,VISA KRÜ(KRÜ Esports),2,2,4,50.0
+2Game Esports,100 Thieves,0,2,2,0.0
+2Game Esports,Cloud9,0,2,2,0.0
+2Game Esports,Evil Geniuses,1,4,5,20.0
+2Game Esports,FURIA,2,3,5,40.0
+2Game Esports,G2 Esports,0,2,2,0.0
+2Game Esports,KRÜ Esports,0,2,2,0.0
+2Game Esports,LOUD,2,0,2,100.0
+2Game Esports,Sentinels,1,4,5,20.0
+2Game Esports,VISA KRÜ(KRÜ Esports),1,2,3,33.3
+Cloud9,100 Thieves,3,2,5,60.0
+Cloud9,2Game Esports,2,0,2,100.0
+Cloud9,ENVY,2,1,3,66.7
+Cloud9,Evil Geniuses,2,2,4,50.0
+Cloud9,FURIA,4,0,4,100.0
+Cloud9,G2 Esports,1,8,9,11.1
+Cloud9,LEVIATÁN,8,1,9,88.9
+Cloud9,LOUD,2,0,2,100.0
+Cloud9,MIBR,2,4,6,33.3
+Cloud9,NRG,5,5,10,50.0
+Cloud9,Sentinels,1,6,7,14.3
+ENVY,Cloud9,1,2,3,33.3
+ENVY,Evil Geniuses,2,3,5,40.0
+ENVY,KRÜ Esports,2,1,3,66.7
+ENVY,MIBR,0,2,2,0.0
+Evil Geniuses,100 Thieves,0,6,6,0.0
+Evil Geniuses,2Game Esports,4,1,5,80.0
+Evil Geniuses,Cloud9,2,2,4,50.0
+Evil Geniuses,ENVY,3,2,5,60.0
+Evil Geniuses,FURIA,4,0,4,100.0
+Evil Geniuses,G2 Esports,2,4,6,33.3
+Evil Geniuses,LOUD,4,3,7,57.1
+Evil Geniuses,MIBR,0,2,2,0.0
+Evil Geniuses,Sentinels,0,6,6,0.0
+Evil Geniuses,VISA KRÜ(KRÜ Esports),4,0,4,100.0
+FURIA,2Game Esports,3,2,5,60.0
+FURIA,Cloud9,0,4,4,0.0
+FURIA,Evil Geniuses,0,4,4,0.0
+FURIA,G2 Esports,2,5,7,28.6
+FURIA,KRÜ Esports,2,1,3,66.7
+FURIA,LEVIATÁN,0,4,4,0.0
+FURIA,MIBR,4,4,8,50.0
+FURIA,NRG,1,2,3,33.3
+FURIA,Sentinels,2,2,4,50.0
+G2 Esports,100 Thieves,6,2,8,75.0
+G2 Esports,2Game Esports,2,0,2,100.0
+G2 Esports,Cloud9,8,1,9,88.9
+G2 Esports,Evil Geniuses,4,2,6,66.7
+G2 Esports,FURIA,5,2,7,71.4
+G2 Esports,LEVIATÁN,4,1,5,80.0
+G2 Esports,MIBR,8,2,10,80.0
+G2 Esports,NRG,9,1,10,90.0
+G2 Esports,Sentinels,12,7,19,63.2
+KRÜ Esports,2Game Esports,2,0,2,100.0
+KRÜ Esports,ENVY,1,2,3,33.3
+KRÜ Esports,FURIA,1,2,3,33.3
+KRÜ Esports,LEVIATÁN,0,2,2,0.0
+KRÜ Esports,LOUD,2,2,4,50.0
+KRÜ Esports,MIBR,1,2,3,33.3
+KRÜ Esports,NRG,2,1,3,66.7
+LEVIATÁN,100 Thieves,3,3,6,50.0
+LEVIATÁN,Cloud9,1,8,9,11.1
+LEVIATÁN,FURIA,4,0,4,100.0
+LEVIATÁN,G2 Esports,1,4,5,20.0
+LEVIATÁN,KRÜ Esports,2,0,2,100.0
+LEVIATÁN,LOUD,1,2,3,33.3
+LEVIATÁN,MIBR,3,4,7,42.9
+LEVIATÁN,NRG,1,6,7,14.3
+LEVIATÁN,Sentinels,2,0,2,100.0
+LEVIATÁN,VISA KRÜ(KRÜ Esports),4,2,6,66.7
+LOUD,100 Thieves,3,6,9,33.3
+LOUD,2Game Esports,0,2,2,0.0
+LOUD,Cloud9,0,2,2,0.0
+LOUD,Evil Geniuses,3,4,7,42.9
+LOUD,KRÜ Esports,2,2,4,50.0
+LOUD,LEVIATÁN,2,1,3,66.7
+LOUD,MIBR,0,2,2,0.0
+LOUD,NRG,0,2,2,0.0
+LOUD,Sentinels,2,4,6,33.3
+LOUD,VISA KRÜ(KRÜ Esports),2,4,6,33.3
+MIBR,100 Thieves,4,2,6,66.7
+MIBR,Cloud9,4,2,6,66.7
+MIBR,ENVY,2,0,2,100.0
+MIBR,Evil Geniuses,2,0,2,100.0
+MIBR,FURIA,4,4,8,50.0
+MIBR,G2 Esports,2,8,10,20.0
+MIBR,KRÜ Esports,2,1,3,66.7
+MIBR,LEVIATÁN,4,3,7,57.1
+MIBR,LOUD,2,0,2,100.0
+MIBR,NRG,6,6,12,50.0
+MIBR,Sentinels,1,5,6,16.7
+MIBR,VISA KRÜ(KRÜ Esports),3,2,5,60.0
+NRG,100 Thieves,6,5,11,54.5
+NRG,Cloud9,5,5,10,50.0
+NRG,FURIA,2,1,3,66.7
+NRG,G2 Esports,1,9,10,10.0
+NRG,KRÜ Esports,1,2,3,33.3
+NRG,LEVIATÁN,6,1,7,85.7
+NRG,LOUD,2,0,2,100.0
+NRG,MIBR,6,6,12,50.0
+NRG,Sentinels,3,1,4,75.0
+NRG,VISA KRÜ(KRÜ Esports),2,1,3,66.7
+Sentinels,100 Thieves,4,4,8,50.0
+Sentinels,2Game Esports,4,1,5,80.0
+Sentinels,Cloud9,6,1,7,85.7
+Sentinels,Evil Geniuses,6,0,6,100.0
+Sentinels,FURIA,2,2,4,50.0
+Sentinels,G2 Esports,7,12,19,36.8
+Sentinels,LEVIATÁN,0,2,2,0.0
+Sentinels,LOUD,4,2,6,66.7
+Sentinels,MIBR,5,1,6,83.3
+Sentinels,NRG,1,3,4,25.0
+Sentinels,VISA KRÜ(KRÜ Esports),0,2,2,0.0
+VISA KRÜ(KRÜ Esports),100 Thieves,2,2,4,50.0
+VISA KRÜ(KRÜ Esports),2Game Esports,2,1,3,66.7
+VISA KRÜ(KRÜ Esports),Evil Geniuses,0,4,4,0.0
+VISA KRÜ(KRÜ Esports),LEVIATÁN,2,4,6,33.3
+VISA KRÜ(KRÜ Esports),LOUD,4,2,6,66.7
+VISA KRÜ(KRÜ Esports),MIBR,2,3,5,40.0
+VISA KRÜ(KRÜ Esports),NRG,1,2,3,33.3
+VISA KRÜ(KRÜ Esports),Sentinels,2,0,2,100.0

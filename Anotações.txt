@@ -29,3 +29,9 @@ Prever quem qual time ganha o mapa
 Ex: Sen X EG na Haven quem ganha?
 Prever quem ganha a séria MD3 ou MD5
 Ex: Kru x Fur em uma MD3 com os Mapas IceBox, Lotus, Abiss qual o placar final 2x0, 2x1 pra quem?
+
+
+
+“Impacto individual realmente influencia vitória no Valorant?”
+“Quais jogadores são mais eficientes independentemente do time?”
+“Quais mapas favorecem quais perfis de jogador?”
