@@ -117,6 +117,25 @@ def carregar_dados(path: str) -> pd.DataFrame:
     return df
 
 
+@st.cache_data(show_spinner="Carregando dados para ML…")
+def carregar_dados_ml() -> pd.DataFrame:
+    df = pd.concat([
+        pd.read_csv('status_individual_americas.csv'),
+        pd.read_csv('status_individual_emea.csv'),
+        pd.read_csv('status_individual_pacifico.csv'),
+        pd.read_csv('status_individual_china2.csv'),
+    ], ignore_index=True)
+
+    drop_cols = ['Unnamed: 0', 'Time1', 'Mapas_T1', 'Score_T1',
+                 'Time2', 'Mapas_T2', 'Score_T2']
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns])
+    df = df.drop_duplicates().reset_index(drop=True)
+    df['Role'] = df['Agente'].map(AGENTE_PARA_ROLE)
+    df['win_rate_jogador'] = df.groupby('Jogador')['target'].transform('mean')
+    df['win_rate_agente']  = df.groupby('Agente')['target'].transform('mean')
+    return df
+
+
 @st.cache_resource(show_spinner="Treinando modelo ML…")
 def treinar_modelo(df: pd.DataFrame):
     df_ml = df.dropna(subset=['Role'] + COLUNAS_STATS).copy()
@@ -424,34 +443,51 @@ elif pagina == "📊 Análises Gráficas":
         fig3 = fig_barh(top_j, f"Top {top_n} Jogadores — {stat_t} ({label_agg}) — {liga_g}", fmt=fmt_func)
         st.pyplot(fig3)
 
-    # ── Stats por Agente ───────────────────────────────────────────────────
+   # ── Stats por Agente ───────────────────────────────────────────────────
     with tab4:
+        STATS_MEDIA = ['R', 'ACS', 'KAST', 'ADR', 'HS%']
+        STATS_SOMA  = ['K', 'D', 'A', '+/-', 'FK', 'FD', '+/-_FK_FD']
+
         c1, c2 = st.columns(2)
-        stat_a = c1.selectbox("Estatística", ['R','ACS','K','D','A','+/-','KAST','ADR','HS%','FK','FD','+/-_FK_FD'], key='stat_ag')
+        stat_a = c1.selectbox("Estatística", STATS_MEDIA + STATS_SOMA, key='stat_ag')
         min_p  = c2.slider("Mín. partidas", 1, 30, 5, key='minp')
+
+        agg_func  = 'mean' if stat_a in STATS_MEDIA else 'sum'
+        label_agg = 'Média' if stat_a in STATS_MEDIA else 'Total'
+        fmt_func  = (lambda v: f"{v:.2f}") if stat_a in STATS_MEDIA else (lambda v: str(int(v)))
+
         stats_ag = (df_g.groupby('Agente')
-                       .agg(Partidas=('Agente','count'), Val=(stat_a,'mean'))
+                       .agg(Partidas=('Agente','count'), Val=(stat_a, agg_func))
                        .query(f'Partidas >= {min_p}')
                        .sort_values('Val', ascending=False)['Val'])
-        fig4 = fig_barh(stats_ag, f"{stat_a} Médio por Agente — {liga_g}",
-                        fmt=lambda v: f"{v:.2f}")
+
+        fig4 = fig_barh(stats_ag, f"{stat_a} ({label_agg}) por Agente — {liga_g}", fmt=fmt_func)
         st.pyplot(fig4)
 
     # ── Melhor por Mapa ────────────────────────────────────────────────────
     with tab5:
+        STATS_MEDIA = ['R', 'ACS', 'KAST', 'ADR', 'HS%']
+        STATS_SOMA  = ['K', 'D', 'A', '+/-', 'FK', 'FD', '+/-_FK_FD']
+
         c1, c2 = st.columns(2)
-        stat_m  = c1.selectbox("Estatística", ['R','ACS','ADR','KAST'], key='stat_mapa')
-        min_pm  = c2.slider("Mín. partidas", 1, 10, 2, key='minpm')
-        melhor  = (df_g.groupby(['Mapa','Jogador'])
-                       .agg(Val=(stat_m,'mean'), Partidas=(stat_m,'count'))
-                       .query(f'Partidas >= {min_pm}')
-                       .reset_index()
-                       .sort_values('Val', ascending=False)
-                       .groupby('Mapa').first().reset_index()
-                       .sort_values('Val', ascending=False))
+        stat_m = c1.selectbox("Estatística", STATS_MEDIA + STATS_SOMA, key='stat_mapa')
+        min_pm = c2.slider("Mín. partidas", 1, 10, 2, key='minpm')
+
+        agg_func  = 'mean' if stat_m in STATS_MEDIA else 'sum'
+        label_agg = 'Média' if stat_m in STATS_MEDIA else 'Total'
+        fmt_func  = (lambda v: f"{v:.2f}") if stat_m in STATS_MEDIA else (lambda v: str(int(v)))
+
+        melhor = (df_g.groupby(['Mapa', 'Jogador'])
+                      .agg(Val=(stat_m, agg_func), Partidas=(stat_m, 'count'))
+                      .query(f'Partidas >= {min_pm}')
+                      .reset_index()
+                      .sort_values('Val', ascending=False)
+                      .groupby('Mapa').first().reset_index()
+                      .sort_values('Val', ascending=False))
+
         melhor.index = [f"{r.Mapa}  →  {r.Jogador}" for _, r in melhor.iterrows()]
-        fig5 = fig_barh(melhor['Val'], f"Melhor por Mapa ({stat_m}) — {liga_g}",
-                        fmt=lambda v: f"{v:.2f}")
+
+        fig5 = fig_barh(melhor['Val'], f"Melhor por Mapa — {stat_m} ({label_agg}) — {liga_g}", fmt=fmt_func)
         st.pyplot(fig5)
 
 
@@ -459,110 +495,230 @@ elif pagina == "📊 Análises Gráficas":
 # PÁGINA: PREDIÇÃO ML
 # ══════════════════════════════════════════════════════════════════════════════
 elif pagina == "🤖 Predição ML":
-    st.title("🤖 Predição de Vitória — ML")
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import roc_auc_score
+    df_ml = carregar_dados_ml()
+    
+    @st.cache_data(show_spinner="Montando confrontos…")
+    def montar_confrontos(df: pd.DataFrame) -> pd.DataFrame:
+        df_g = df.copy()
+        df_g['win_rate_jogador'] = df_g.groupby('Jogador')['target'].transform('mean')
+        df_g['win_rate_agente']  = df_g.groupby('Agente')['target'].transform('mean')
+        df_g['id_time'] = df_g.index // 5
 
-    # treina / usa cache
-    with st.spinner("Preparando modelo…"):
-        modelo, le, ohe, ohe_cols, features, df_ml, metricas = treinar_modelo(df)
+        linhas = []
+        for _, grupo in df_g.groupby('id_time'):
+            linha = {'Mapa': grupo['Mapa'].iloc[0], 'target': grupo['target'].iloc[0]}
+            for i, (_, row) in enumerate(grupo.iterrows(), start=1):
+                linha[f'Jogador{i}']    = row['Jogador']
+                linha[f'Agente{i}']     = row['Agente']
+                linha[f'WR_Jogador{i}'] = row['win_rate_jogador']
+                linha[f'WR_Agente{i}']  = row['win_rate_agente']
+            linhas.append(linha)
 
-    global_mean = df_ml['target'].mean()
+        df_time = pd.DataFrame(linhas)
+        df_A = df_time[df_time.index % 2 == 0].reset_index(drop=True).add_prefix('A_')
+        df_B = df_time[df_time.index % 2 == 1].reset_index(drop=True).add_prefix('B_')
+        df_c = pd.concat([df_A, df_B], axis=1)
+        df_c = df_c.rename(columns={'A_Mapa': 'Mapa', 'A_target': 'target_A', 'B_target': 'target_B'})
+        df_c = df_c.drop(columns=['B_Mapa'])
+        return df_c
 
-    # métricas do modelo
+    @st.cache_resource(show_spinner="Treinando modelo de confronto…")
+    def treinar_modelo_confronto(_df_confrontos: pd.DataFrame):
+        df = _df_confrontos.copy()
+
+        wr_jogadores_A = [f'A_WR_Jogador{i}' for i in range(1, 6)]
+        wr_agentes_A   = [f'A_WR_Agente{i}'  for i in range(1, 6)]
+        wr_jogadores_B = [f'B_WR_Jogador{i}' for i in range(1, 6)]
+        wr_agentes_B   = [f'B_WR_Agente{i}'  for i in range(1, 6)]
+
+        df['diff_wr_jogadores'] = df[wr_jogadores_A].mean(axis=1) - df[wr_jogadores_B].mean(axis=1)
+        df['diff_wr_agentes']   = df[wr_agentes_A].mean(axis=1)   - df[wr_agentes_B].mean(axis=1)
+        df['media_wr_A']        = df[wr_jogadores_A].mean(axis=1)
+        df['media_wr_B']        = df[wr_jogadores_B].mean(axis=1)
+        df['media_agente_A']    = df[wr_agentes_A].mean(axis=1)
+        df['media_agente_B']    = df[wr_agentes_B].mean(axis=1)
+
+        df_flip = df.copy()
+        df_flip['target_A']          = 1 - df['target_A']
+        df_flip['diff_wr_jogadores'] = -df['diff_wr_jogadores']
+        df_flip['diff_wr_agentes']   = -df['diff_wr_agentes']
+        df_flip['media_wr_A']        = df['media_wr_B']
+        df_flip['media_wr_B']        = df['media_wr_A']
+        df_flip['media_agente_A']    = df['media_agente_B']
+        df_flip['media_agente_B']    = df['media_agente_A']
+
+        df_bal = pd.concat([df, df_flip], ignore_index=True)
+
+        features_deriv = [
+            'diff_wr_jogadores', 'diff_wr_agentes',
+            'media_wr_A', 'media_wr_B',
+            'media_agente_A', 'media_agente_B'
+        ]
+        df_mapa = pd.get_dummies(df_bal['Mapa'], prefix='mapa')
+        X = pd.concat([df_bal[features_deriv], df_mapa], axis=1)
+        y = df_bal['target_A']
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, stratify=y, random_state=42
+        )
+        modelo = Pipeline([
+            ('scaler', StandardScaler()),
+            ('clf', LogisticRegression(max_iter=1000))
+        ])
+        modelo.fit(X_train, y_train)
+        return modelo, X, X_test, y_test
+
+    def prever_confronto_app(mapa, jogadores_A, agentes_A, jogadores_B, agentes_B,
+                              modelo, X, df_c):
+        def get_wr_jogador(nome):
+            for prefix in ['A', 'B']:
+                for i in range(1, 6):
+                    match = df_c[df_c[f'{prefix}_Jogador{i}'] == nome][f'{prefix}_WR_Jogador{i}']
+                    if not match.empty:
+                        return match.mean()
+            return 0.5
+
+        def get_wr_agente(nome):
+            for prefix in ['A', 'B']:
+                for i in range(1, 6):
+                    match = df_c[df_c[f'{prefix}_Agente{i}'] == nome][f'{prefix}_WR_Agente{i}']
+                    if not match.empty:
+                        return match.mean()
+            return 0.5
+
+        wrs_jog_A = [get_wr_jogador(j) for j in jogadores_A]
+        wrs_age_A = [get_wr_agente(a)  for a in agentes_A]
+        wrs_jog_B = [get_wr_jogador(j) for j in jogadores_B]
+        wrs_age_B = [get_wr_agente(a)  for a in agentes_B]
+
+        row = {
+            'diff_wr_jogadores': np.mean(wrs_jog_A) - np.mean(wrs_jog_B),
+            'diff_wr_agentes':   np.mean(wrs_age_A) - np.mean(wrs_age_B),
+            'media_wr_A':        np.mean(wrs_jog_A),
+            'media_wr_B':        np.mean(wrs_jog_B),
+            'media_agente_A':    np.mean(wrs_age_A),
+            'media_agente_B':    np.mean(wrs_age_B),
+        }
+        for col in X.columns:
+            if col.startswith('mapa_'):
+                row[col] = 1 if col == f'mapa_{mapa}' else 0
+
+        df_input = pd.DataFrame([row])[X.columns]
+        prob_A = float(modelo.predict_proba(df_input)[0][1])
+        prob_B = 1 - prob_A
+        return prob_A, prob_B
+
+    # ── Executar ───────────────────────────────────────────────────────────
+    st.title("🤖 Predição de Confronto — ML")
+
+    df_confrontos = montar_confrontos(df_ml)
+    modelo_final, X, X_test, y_test = treinar_modelo_confronto(df_confrontos)
+
+    # Lista de jogadores para autocomplete
+    todos_jogadores = sorted(set(
+        nome
+        for prefix in ['A', 'B']
+        for i in range(1, 6)
+        for nome in df_confrontos[f'{prefix}_Jogador{i}'].dropna().unique()
+    ))
+
+    # Métricas
+    y_prob_all = modelo_final.predict_proba(X_test)[:, 1]
+    y_pred_all = modelo_final.predict(X_test)
     st.subheader("Desempenho do Modelo")
     mc = st.columns(3)
-    mc[0].metric("ROC-AUC",  metricas['ROC-AUC'])
-    mc[1].metric("Log Loss", metricas['Log Loss'])
-    mc[2].metric("Brier",    metricas['Brier'])
+    mc[0].metric("ROC-AUC",  f"{roc_auc_score(y_test, y_prob_all):.3f}")
+    mc[1].metric("Accuracy", f"{(y_pred_all == y_test).mean():.3f}")
+    mc[2].metric("Amostras", f"{len(X)}")
     st.markdown("---")
 
-    # seleção do mapa
-    mapa_sel = st.selectbox("Mapa da partida", mapas_disp)
+    # Seleção de mapa
+    mapas_ml = sorted(df_confrontos['Mapa'].unique().tolist())
+    mapa_sel = st.selectbox("🗺️ Mapa da partida", mapas_ml)
     st.markdown("---")
 
-    # formulário do time (5 jogadores)
-    st.subheader("Insira os 5 jogadores do time")
+    # Formulário dos dois times
+    col_a, col_sep, col_b = st.columns([5, 0.3, 5])
+    jogadores_A, agentes_A, jogadores_B, agentes_B = [], [], [], []
 
-    jogadores_rows = []
-    for i in range(1, 6):
-        st.markdown(f"**Jogador {i}**")
-        c = st.columns([2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-        jog  = c[0].text_input("Nome",   key=f"j{i}_nome",  placeholder="ex: TenZ")
-        ag   = c[1].selectbox("Agente",  TODOS_AGENTES, key=f"j{i}_ag")
-        r    = c[2].number_input("R",    value=1.0,  step=0.01, key=f"j{i}_r",    format="%.2f")
-        acs  = c[3].number_input("ACS",  value=200,  step=1,    key=f"j{i}_acs")
-        k    = c[4].number_input("K",    value=15,   step=1,    key=f"j{i}_k")
-        d    = c[5].number_input("D",    value=15,   step=1,    key=f"j{i}_d")
-        a    = c[6].number_input("A",    value=5,    step=1,    key=f"j{i}_a")
-        kast = c[7].number_input("KAST", value=70,   step=1,    key=f"j{i}_kast")
-        adr  = c[8].number_input("ADR",  value=130,  step=1,    key=f"j{i}_adr")
-        hs   = c[9].number_input("HS%",  value=25,   step=1,    key=f"j{i}_hs")
-        fk   = c[10].number_input("FK",  value=1,    step=1,    key=f"j{i}_fk")
-        fd   = c[11].number_input("FD",  value=1,    step=1,    key=f"j{i}_fd")
+    with col_a:
+        st.subheader("🔵 Time A")
+        for i in range(1, 6):
+            st.markdown(f"**Jogador {i}**")
+            c1, c2 = st.columns(2)
+            jog = c1.selectbox("Nome", todos_jogadores, key=f"a{i}_nome")
+            ag  = c2.selectbox("Agente", TODOS_AGENTES, key=f"a{i}_ag")
+            jogadores_A.append(jog)
+            agentes_A.append(ag)
 
-        pm = fk - fd
-        role = AGENTE_PARA_ROLE.get(ag, "duelistas")
-        jogadores_rows.append({
-            'Jogador': jog or f"Jogador{i}",
-            'Agente': ag, 'Role': role,
-            'R': r, 'ACS': acs, 'K': k, 'D': d, 'A': a,
-            '+/-': k - d, 'KAST': kast, 'ADR': adr, 'HS%': hs,
-            'FK': fk, 'FD': fd, '+/-_FK_FD': pm,
-        })
+    with col_sep:
+        st.markdown("<div style='border-left:1px solid #444;height:700px;margin:auto'></div>",
+                    unsafe_allow_html=True)
 
-    if st.button("🎯 Calcular Probabilidade de Vitória", type="primary"):
-        df_time = calcular_impacto(pd.DataFrame(jogadores_rows))
-        resultados = []
-        for _, row in df_time.iterrows():
-            prob = prever_jogador(
-                jogador=row['Jogador'], agente=row['Agente'], mapa=mapa_sel,
-                stats_row=row, df_ml=df_ml, modelo=modelo,
-                ohe=ohe, ohe_cols=ohe_cols, features=features,
-                global_mean=global_mean,
-            )
-            hist = len(df_ml[(df_ml['Jogador']==row['Jogador']) & (df_ml['Agente']==row['Agente'])])
-            resultados.append({
-                'Jogador':         row['Jogador'],
-                'Agente':          row['Agente'],
-                'Role':            row['Role'],
-                'Impacto no Time': f"{row['Impacto_Time_%']:.1f}%",
-                'Jogos históricos': hist,
-                'Prob. Vitória':   f"{prob*100:.1f}%",
-                '_prob':           prob,
-            })
+    with col_b:
+        st.subheader("🔴 Time B")
+        for i in range(1, 6):
+            st.markdown(f"**Jogador {i}**")
+            c1, c2 = st.columns(2)
+            jog = c1.selectbox("Nome", todos_jogadores, key=f"b{i}_nome")
+            ag  = c2.selectbox("Agente", TODOS_AGENTES, key=f"b{i}_ag")
+            jogadores_B.append(jog)
+            agentes_B.append(ag)
 
-        df_res = pd.DataFrame(resultados).sort_values('_prob', ascending=False)
-        media_prob = df_res['_prob'].mean()
+    st.markdown("---")
+
+    if st.button("🎯 Prever Vencedor", type="primary"):
+        prob_A, prob_B = prever_confronto_app(
+            mapa=mapa_sel,
+            jogadores_A=jogadores_A, agentes_A=agentes_A,
+            jogadores_B=jogadores_B, agentes_B=agentes_B,
+            modelo=modelo_final, X=X, df_c=df_confrontos,
+        )
+        vencedor = "Time A" if prob_A > prob_B else "Time B"
+        cor_A = "#7ed321" if prob_A > prob_B else RED
+        cor_B = "#7ed321" if prob_B > prob_A else RED
 
         st.markdown("---")
-        st.subheader(f"Resultado — Mapa: {mapa_sel}")
+        st.subheader(f"Resultado — {mapa_sel}")
 
-        # gauge de prob média
-        cor_gauge = RED if media_prob < 0.45 else ("#f5a623" if media_prob < 0.55 else "#7ed321")
+        r1, r2, r3 = st.columns([5, 2, 5])
+        with r1:
+            st.markdown(
+                f"<div style='text-align:center'>"
+                f"<h3 style='color:#5b9bd5'>🔵 Time A</h3>"
+                f"<h1 style='color:{cor_A}'>{prob_A*100:.1f}%</h1>"
+                f"<p>{' • '.join(jogadores_A)}</p>"
+                f"</div>", unsafe_allow_html=True)
+        with r2:
+            st.markdown(
+                f"<div style='text-align:center;padding-top:30px'>"
+                f"<h2 style='color:#888'>VS</h2>"
+                f"</div>", unsafe_allow_html=True)
+        with r3:
+            st.markdown(
+                f"<div style='text-align:center'>"
+                f"<h3 style='color:#e05c5c'>🔴 Time B</h3>"
+                f"<h1 style='color:{cor_B}'>{prob_B*100:.1f}%</h1>"
+                f"<p>{' • '.join(jogadores_B)}</p>"
+                f"</div>", unsafe_allow_html=True)
+
         st.markdown(
-            f"<h2 style='text-align:center;color:{cor_gauge}'>"
-            f"Probabilidade média do time: {media_prob*100:.1f}%</h2>",
-            unsafe_allow_html=True,
-        )
+            f"<h2 style='text-align:center;color:#7ed321'>🏆 Favorito: {vencedor}</h2>",
+            unsafe_allow_html=True)
 
-        st.dataframe(
-            df_res.drop(columns='_prob').reset_index(drop=True),
-            use_container_width=True,
-        )
-
-        # gráfico de barras horizontais
-        probs = df_res.set_index('Jogador')['_prob']
-        fig, ax = plt.subplots(figsize=(8, 3.5))
-        cores = [RED if v < 0.45 else ("#f5a623" if v < 0.55 else "#7ed321") for v in probs.values]
-        bars  = ax.barh(probs.index[::-1], probs.values[::-1], color=cores[::-1], height=0.5)
-        for bar, v in zip(bars, probs.values[::-1]):
-            ax.text(bar.get_width()+0.005, bar.get_y()+bar.get_height()/2,
-                    f"{v*100:.1f}%", va='center', fontsize=11, fontweight='bold', color=FG)
-        ax.axvline(0.5, color='white', linestyle='--', alpha=0.4)
-        ax.set_xlim(0, 1.12)
+        fig, ax = plt.subplots(figsize=(8, 1.8))
+        ax.barh([0], [prob_A], color="#5b9bd5", height=0.5)
+        ax.barh([0], [prob_B], left=[prob_A], color="#e05c5c", height=0.5)
+        ax.text(prob_A / 2, 0, f"Time A\n{prob_A*100:.1f}%",
+                ha='center', va='center', fontsize=12, fontweight='bold', color='white')
+        ax.text(prob_A + prob_B / 2, 0, f"Time B\n{prob_B*100:.1f}%",
+                ha='center', va='center', fontsize=12, fontweight='bold', color='white')
+        ax.set_xlim(0, 1)
+        ax.axis('off')
         ax.set_facecolor(BG); fig.patch.set_facecolor(BG)
-        ax.tick_params(colors=FG, labelsize=11)
-        for sp in ax.spines.values(): sp.set_visible(False)
-        ax.xaxis.set_visible(False)
-        ax.set_title("Probabilidade de Vitória por Jogador", color=FG, fontsize=13, fontweight='bold', pad=10)
         plt.tight_layout()
         st.pyplot(fig)
