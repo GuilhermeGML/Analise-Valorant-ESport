@@ -123,7 +123,8 @@ def carregar_dados_ml() -> pd.DataFrame:
         pd.read_csv('status_individual_americas.csv'),
         pd.read_csv('status_individual_emea.csv'),
         pd.read_csv('status_individual_pacifico.csv'),
-        pd.read_csv('status_individual_china2.csv'),
+        pd.read_csv('status_individual_china2.csv')
+        pd.read_csv('status_individual_internacional.csv),
     ], ignore_index=True)
 
     drop_cols = ['Unnamed: 0', 'Time1', 'Mapas_T1', 'Score_T1',
