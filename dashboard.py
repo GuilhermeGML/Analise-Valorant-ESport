@@ -123,7 +123,7 @@ def carregar_dados_ml() -> pd.DataFrame:
         pd.read_csv('status_individual_americas.csv'),
         pd.read_csv('status_individual_emea.csv'),
         pd.read_csv('status_individual_pacifico.csv'),
-        pd.read_csv('status_individual_china2.csv')
+        pd.read_csv('status_individual_china2.csv'),
         pd.read_csv('status_individual_internacional.csv'),
     ], ignore_index=True)
 
